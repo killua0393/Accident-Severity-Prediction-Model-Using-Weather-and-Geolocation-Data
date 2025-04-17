@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accident Severity Prediction</title>
+    <style>
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+    </style>        
+</head>
+<body>
+    <h2>Enter Accident Details</h2>
+    <form id="predictForm">
+        <label for="address">Enter Address:</label><br>
+        <input type="text" id="address" required><br>
+        <label for="weatherCondition">Weather Condition:</label><br>
+        <input type="text" id="weatherCondition" required><br>
+        <label for="windSpeed">Wind Speed (mph):</label><br>
+        <input type="text" id="windSpeed" required><br><br>
+        <button type="submit">Predict Severity</button>
+        <h4>Severity Legend</h4>
+        <div class="legend-item">
+            <div class="legend-color" style="background: green;"></div>Severity 1
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: yellow;"></div>Severity 2
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: orange;"></div>Severity 3
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: red;"></div>Severity 4
+          </div>
+          
+    </div>
+
+
+    </form>
+
+    <h3>Predicted Severity: <span id="result"></span></h3>
+
+    <script>
+        document.getElementById('predictForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const address = document.getElementById('address').value;
+            const weatherCondition = document.getElementById('weatherCondition').value;
+            const windSpeed = parseFloat(document.getElementById('windSpeed').value);
+
+            if (!address || isNaN(windSpeed)) {
+                alert("Please enter a valid address and wind speed.");
+                return;
+            }
+
+            // Use OpenStreetMap Nominatim API for free geocoding
+            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+            const geoResponse = await fetch(geoUrl);
+            const geoData = await geoResponse.json();
+
+            if (!geoData.length) {
+                alert("Location not found.");
+                return;
+            }
+
+            const lat = parseFloat(geoData[0].lat);
+            const lng = parseFloat(geoData[0].lon);
+
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    Start_Lat: lat,
+                    Start_Lng: lng,
+                    Weather_Condition: weatherCondition,
+                    Wind_Speed: windSpeed
+                })
+            });
+
+            const result = await response.json();
+            if (result.predicted_severity !== undefined) {
+                document.getElementById('result').textContent = result.predicted_severity;
+            } else {
+                document.getElementById('result').textContent = "Error: " + result.error;
+            }
+        });
+    </script>
+</body>
+</html>
